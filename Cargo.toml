@@ -1,7 +1,10 @@
 [package]
 name = "artistic"
 version = "0.1.0"
+authors = ["monnocat"]
 edition = "2024"
+repository = "hhtps://github.com/monnocat/artistic"
+license = "MIT"
 
 [dependencies]
 chrono = "0.4.41"
