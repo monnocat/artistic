@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE suggestions\n         SET approved = TRUE\n         WHERE poll_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "6ad5ad6e49c8cf652c9d3a58464505df35a0ba601c39b6183cf00a941efa02ac"
+}

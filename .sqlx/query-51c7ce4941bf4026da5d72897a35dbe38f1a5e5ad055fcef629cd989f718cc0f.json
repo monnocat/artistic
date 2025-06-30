@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE polls\n         SET status = ?, votes = ?\n         WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "51c7ce4941bf4026da5d72897a35dbe38f1a5e5ad055fcef629cd989f718cc0f"
+}

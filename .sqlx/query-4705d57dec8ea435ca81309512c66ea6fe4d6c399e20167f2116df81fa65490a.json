@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM suggestions\n         WHERE poll_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "4705d57dec8ea435ca81309512c66ea6fe4d6c399e20167f2116df81fa65490a"
+}

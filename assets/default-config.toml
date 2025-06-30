@@ -1,0 +1,27 @@
+# The operating guild ID.
+guild-id = 0
+
+# The internal artist channel ID.
+internal-channel-id = 0
+
+# The external artist channel ID.
+external-channel-id = 0
+
+# The form timeout duration in seconds.
+# If the form is not submitted within this duration, it will be cancelled.
+form-timeout = 0
+
+# The weekday to post announcements on.
+announcement-weekday = "monday"
+
+# The time of day to post announcements at (UTC).
+announcement-time = "12:00"
+
+# The role ID to ping in announcements.
+announcement-role-id = 0
+
+# The minimum number of votes required to pass a poll.
+poll-threshold = 0
+
+# The poll facilitator role ID.
+facilitator-role-id = 0

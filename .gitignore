@@ -1,0 +1,5 @@
+/target
+.env
+config.toml
+database.sqlite
+biweekly_flag.bin

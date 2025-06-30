@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO suggestions (user_id, username, artist_name, album_name, links, notes, internal, poll_id)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "cefa1af3a8f41cfedb508eaa5e20ce4c10a7affa42fdae7b8fde4a7741d560b3"
+}
