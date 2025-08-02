@@ -316,3 +316,36 @@ pub async fn error_handler(err: FrameworkError<'_, Data, Report>) {
         _ => {}
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use chrono::NaiveDateTime;
+
+    use super::*;
+
+    fn parse_date(date: &str) -> NaiveDateTime {
+        NaiveDateTime::parse_from_str(date, "%Y-%m-%d %H:%M:%S").unwrap()
+    }
+
+    #[test]
+    fn test_next_weekday_at() {
+        const TESTS: &[(&str, &str, &str)] = &[
+            ("2025-01-01 00:00:00", "mon 00:00:00", "2025-01-06 00:00:00"),
+            ("2025-01-02 00:00:00", "mon 00:00:00", "2025-01-06 00:00:00"),
+            ("2025-01-01 11:59:59", "wed 12:00:00", "2025-01-01 12:00:00"),
+            ("2025-01-01 12:00:00", "wed 12:00:00", "2025-01-08 12:00:00"),
+        ];
+
+        for (now, weekday_time, expected) in TESTS {
+            let now = parse_date(now).and_utc();
+            let weekday = Weekday::from_str(&weekday_time[..3]).unwrap();
+            let time = NaiveTime::parse_from_str(&weekday_time[4..], "%H:%M:%S").unwrap();
+            let actual = next_weekday_at(now, weekday, time);
+            let expected = parse_date(expected).and_utc();
+
+            assert_eq!(actual, expected);
+        }
+    }
+}
