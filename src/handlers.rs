@@ -36,7 +36,7 @@ pub async fn post_announcements(ctx: Context, data: Data) {
         .write(true)
         .truncate(false)
         .create(true)
-        .open("biweekly_flag.bin")
+        .open("./data/biweekly_flag.bin")
         .await;
 
     let mut biweekly_flag = [0];
@@ -45,7 +45,7 @@ pub async fn post_announcements(ctx: Context, data: Data) {
         // the error is ignored because the file is created if it doesn't exist
         Ok(mut file) => _ = file.read_exact(&mut biweekly_flag).await,
         Err(e) => {
-            error!("Failed to open biweekly_flag.bin: {e:#}");
+            error!("Failed to open ./data/biweekly_flag.bin: {e:#}");
         }
     };
 
@@ -54,11 +54,15 @@ pub async fn post_announcements(ctx: Context, data: Data) {
     loop {
         // reusing `now` because this could be called near the announcement time
         let now = Utc::now();
-        let next_date = next_weekday_at(
-            now,
-            data.config.announcement_weekday,
-            data.config.announcement_time,
-        );
+        let next_date = if data.config.debug_announcement_period.is_zero() {
+            next_weekday_at(
+                now,
+                data.config.announcement_weekday,
+                data.config.announcement_time,
+            )
+        } else {
+            now + data.config.debug_announcement_period
+        };
 
         // wait until the next announcement
         // unwrapping `to_std` is safe because `next_date` is always greater than `now`
@@ -76,11 +80,11 @@ pub async fn post_announcements(ctx: Context, data: Data) {
 
         biweekly_flag ^= true;
 
-        if let Err(e) = fs::write("biweekly_flag.bin", [biweekly_flag as u8])
+        if let Err(e) = fs::write("./data/biweekly_flag.bin", [biweekly_flag as u8])
             .await
-            .wrap_err("failed to write to biweekly_flag.bin")
+            .wrap_err("failed to write to ./data/biweekly_flag.bin")
         {
-            error!("Failed to write to biweekly_flag.bin: {e:#}");
+            error!("Failed to write to ./data/biweekly_flag.bin: {e:#}");
         }
     }
 }
@@ -121,8 +125,8 @@ async fn handle_poll_interaction(
     // check if the interaction is valid
     if !matches!(interaction.data.kind, ComponentInteractionDataKind::Button)
         || interaction.guild_id != Some(data.config.guild)
-        || (interaction.channel_id != data.config.internal_channel
-            && interaction.channel_id != data.config.external_channel)
+        || (interaction.channel_id != data.config.internal_poll_channel
+            && interaction.channel_id != data.config.external_poll_channel)
         || !interaction.data.custom_id.starts_with("poll:")
     {
         return Ok(());
@@ -180,7 +184,7 @@ async fn handle_poll_interaction(
                             }
 
                             // edit the message
-                            data.get_channel(poll.internal)
+                            data.get_poll_channel(poll.internal)
                                 .edit_message(&ctx, poll.message_id, edit_builder)
                                 .await
                                 .wrap_err("failed to edit message")?;
@@ -212,12 +216,12 @@ async fn handle_poll_interaction(
 
                         // remove the suggestion
                         let suggestion = data.fetch_suggestion(poll.id).await?;
-                        data.remove_suggestion(poll.id).await?;
+                        data.remove_suggestion_by_poll(poll.id).await?;
 
                         let embed = data.build_poll_embed(&ctx, &suggestion, &poll.status).await;
 
                         // edit the message
-                        data.get_channel(poll.internal)
+                        data.get_poll_channel(poll.internal)
                             .edit_message(
                                 &ctx,
                                 poll.message_id,
@@ -252,12 +256,12 @@ async fn handle_poll_interaction(
 
                         // remove the suggestion
                         let suggestion = data.fetch_suggestion(poll.id).await?;
-                        data.remove_suggestion(poll.id).await?;
+                        data.remove_suggestion_by_poll(poll.id).await?;
 
                         let embed = data.build_poll_embed(&ctx, &suggestion, &poll.status).await;
 
                         // edit the message
-                        data.get_channel(poll.internal)
+                        data.get_poll_channel(poll.internal)
                             .edit_message(
                                 &ctx,
                                 poll.message_id,

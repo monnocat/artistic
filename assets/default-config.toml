@@ -7,6 +7,12 @@ internal-channel-id = 0
 # The external artist channel ID.
 external-channel-id = 0
 
+# The internal artist poll channel ID.
+internal-poll-channel-id = 0
+
+# The external artist poll channel ID.
+external-poll-channel-id = 0
+
 # The form timeout duration in seconds.
 # If the form is not submitted within this duration, it will be cancelled.
 form-timeout = 0

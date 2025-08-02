@@ -16,11 +16,11 @@ use crate::{
 pub async fn connect() -> Result<SqlitePool> {
     let pool = SqlitePool::connect_with(
         SqliteConnectOptions::new()
-            .filename("database.sqlite")
+            .filename("./data/database.sqlite")
             .create_if_missing(true),
     )
     .await
-    .wrap_err("failed to connect to database.sqlite")?;
+    .wrap_err("failed to connect to ./data/database.sqlite")?;
 
     create_tables(&pool).await?;
 
@@ -82,6 +82,7 @@ pub async fn fetch_suggestion(pool: &SqlitePool, poll_id: u64) -> Result<Suggest
     .ok_or(eyre!("suggestion not found"))?;
 
     Ok(Suggestion {
+        id: suggestion.id as u64,
         user_id: UserId::new(suggestion.user_id as u64),
         username: suggestion.username,
         artist_name: suggestion.artist_name,
@@ -109,8 +110,52 @@ pub async fn approve_suggestion(pool: &SqlitePool, poll_id: u64) -> Result<()> {
     Ok(())
 }
 
+/// Fetches the oldest approved suggestion.
+pub async fn pick_suggestion(pool: &SqlitePool, internal: bool) -> Result<Suggestion> {
+    let suggestion = query!(
+        "SELECT id, user_id, username, artist_name, album_name, links, notes, internal
+         FROM suggestions
+         WHERE internal = ? AND approved = TRUE
+         GROUP BY user_id
+         ORDER BY timestamp
+         LIMIT 1",
+        internal
+    )
+    .fetch_optional(pool)
+    .await
+    .wrap_err("failed to fetch suggestion")?
+    .ok_or(eyre!("no approved {} suggestion found", artist(internal)))?;
+
+    Ok(Suggestion {
+        id: suggestion.id as u64,
+        user_id: UserId::new(suggestion.user_id as u64),
+        username: suggestion.username,
+        artist_name: suggestion.artist_name,
+        album_name: suggestion.album_name,
+        links: suggestion.links,
+        notes: suggestion.notes,
+        internal: suggestion.internal,
+    })
+}
+
+/// Removes the suggestion with the given suggestion ID.
+pub async fn remove_suggestion(pool: &SqlitePool, suggestion_id: u64) -> Result<()> {
+    let suggestion_id = suggestion_id as i64;
+
+    query!(
+        "DELETE FROM suggestions
+         WHERE id = ?",
+        suggestion_id
+    )
+    .execute(pool)
+    .await
+    .wrap_err("failed to remove suggestion")?;
+
+    Ok(())
+}
+
 /// Removes the suggestion with the given poll ID.
-pub async fn remove_suggestion(pool: &SqlitePool, poll_id: u64) -> Result<()> {
+pub async fn remove_suggestion_by_poll(pool: &SqlitePool, poll_id: u64) -> Result<()> {
     let poll_id = poll_id as i64;
 
     query!(
@@ -123,42 +168,6 @@ pub async fn remove_suggestion(pool: &SqlitePool, poll_id: u64) -> Result<()> {
     .wrap_err("failed to remove suggestion")?;
 
     Ok(())
-}
-
-/// Fetches the latest approved suggestion and removes it from the database.
-pub async fn pick_suggestion(pool: &SqlitePool, internal: bool) -> Result<Suggestion> {
-    let suggestion = query!(
-        "SELECT id, user_id, username, artist_name, album_name, links, notes, internal
-         FROM suggestions
-         WHERE internal = ? AND approved = TRUE
-         GROUP BY user_id
-         ORDER BY timestamp DESC
-         LIMIT 1",
-        internal
-    )
-    .fetch_optional(pool)
-    .await
-    .wrap_err("failed to fetch suggestion")?
-    .ok_or(eyre!("no approved {} suggestion found", artist(internal)))?;
-
-    query!(
-        "DELETE FROM suggestions
-         WHERE id = ?",
-        suggestion.id
-    )
-    .execute(pool)
-    .await
-    .wrap_err("failed to remove suggestion")?;
-
-    Ok(Suggestion {
-        user_id: UserId::new(suggestion.user_id as u64),
-        username: suggestion.username,
-        artist_name: suggestion.artist_name,
-        album_name: suggestion.album_name,
-        links: suggestion.links,
-        notes: suggestion.notes,
-        internal: suggestion.internal,
-    })
 }
 
 /// Inserts a new poll into the database and returns its ID.

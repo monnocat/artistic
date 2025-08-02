@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, user_id, username, artist_name, album_name, links, notes, internal\n         FROM suggestions\n         WHERE internal = ? AND approved = TRUE\n         GROUP BY user_id\n         ORDER BY timestamp DESC\n         LIMIT 1",
+  "query": "SELECT id, user_id, username, artist_name, album_name, links, notes, internal\n         FROM suggestions\n         WHERE internal = ? AND approved = TRUE\n         GROUP BY user_id\n         ORDER BY timestamp\n         LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -58,5 +58,5 @@
       false
     ]
   },
-  "hash": "49ba1bf13bc05a40d586cab5b01ddffb65e0dc76ce5673e93b178a2d878146aa"
+  "hash": "6166e7cb587f26d3f5056a9055aa14cbc9858e624716f5db6d3b7069057ec171"
 }

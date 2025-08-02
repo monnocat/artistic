@@ -34,11 +34,20 @@ impl Data {
     }
 
     /// Returns the channel to post announcements to.
-    pub fn get_channel(&self, internal: bool) -> ChannelId {
+    pub fn get_announcement_channel(&self, internal: bool) -> ChannelId {
         if internal {
             self.config.internal_channel
         } else {
             self.config.external_channel
+        }
+    }
+
+    /// Returns the channel to post suggestion polls to.
+    pub fn get_poll_channel(&self, internal: bool) -> ChannelId {
+        if internal {
+            self.config.internal_poll_channel
+        } else {
+            self.config.external_poll_channel
         }
     }
 
@@ -61,16 +70,21 @@ impl Data {
             .wrap_err("failed to approve suggestion")
     }
 
-    /// Removes the suggestion with the given poll ID.
-    pub async fn remove_suggestion(&self, poll_id: u64) -> Result<()> {
-        database::remove_suggestion(&self.pool, poll_id).await
-    }
-
-    /// Fetches the latest approved suggestion and removes it from the database.
+    /// Fetches the oldest approved suggestion but does not remove it from the database.
     async fn pick_suggestion(&self, internal: bool) -> Result<Suggestion> {
         database::pick_suggestion(&self.pool, internal)
             .await
             .wrap_err("failed to pick suggestion")
+    }
+
+    /// Removes the suggestion with the given suggestion ID.
+    pub async fn remove_suggestion(&self, suggestion_id: u64) -> Result<()> {
+        database::remove_suggestion(&self.pool, suggestion_id).await
+    }
+
+    /// Removes the suggestion with the given poll ID.
+    pub async fn remove_suggestion_by_poll(&self, poll_id: u64) -> Result<()> {
+        database::remove_suggestion_by_poll(&self.pool, poll_id).await
     }
 
     /// Inserts a new poll to the database and returns its ID.
@@ -159,7 +173,7 @@ impl Data {
 
         // send the poll
         let message = self
-            .get_channel(suggestion.internal)
+            .get_poll_channel(suggestion.internal)
             .send_message(ctx, message_builder)
             .await
             .wrap_err("failed to send message")?;
@@ -172,7 +186,7 @@ impl Data {
         Ok(poll_id)
     }
 
-    /// Fetches a suggestion from the database and posts it to the appropriate channel.
+    /// Fetches and removes the oldest suggestion from the database and posts it to the appropriate channel.
     pub async fn post_announcement(
         &self,
         cache_http: impl CacheHttp,
@@ -210,7 +224,7 @@ impl Data {
             .fields(embed_fields)
             .color((87, 242, 135));
 
-        self.get_channel(internal)
+        self.get_announcement_channel(internal)
             .send_message(
                 cache_http,
                 CreateMessage::new()
@@ -220,11 +234,14 @@ impl Data {
             .await
             .wrap_err("failed to send message")?;
 
+        self.remove_suggestion(suggestion.id).await?;
+
         Ok(())
     }
 }
 
 pub struct Suggestion {
+    pub id: u64, // may be 0 when this struct represents a parsed suggestion modal response (as opposed to a DB query result)
     pub user_id: UserId,
     pub username: String,
     pub artist_name: String,
@@ -241,6 +258,7 @@ impl Suggestion {
         };
 
         Ok(Suggestion {
+            id: 0,
             user_id: response.interaction.user.id,
             username: response.interaction.user.name.clone(),
             artist_name: response.inputs[0].clone(),

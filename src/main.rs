@@ -6,7 +6,7 @@ mod init_tracing;
 mod types;
 mod util;
 
-use std::env;
+use std::{env, fs};
 
 use color_eyre::{Result, eyre::Context as _};
 use poise::{Framework, FrameworkOptions, builtins::register_in_guild, serenity_prelude::*};
@@ -18,9 +18,14 @@ use types::Data;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    color_eyre::install().wrap_err("failed to install color_eyre")?;
-    dotenvy::dotenv().expect("failed to load .env file");
+    if let Err(e) = dotenvy::dotenv() {
+        eprintln!("(non-fatal) failed to load .env: {e:#}");
+    }
+
+    color_eyre::install()
+        .wrap_err("failed to install color_eyre default panic and error report hooks")?;
     init_tracing::init().wrap_err("failed to initialize tracing formatter")?;
+    fs::create_dir_all("./data/").expect("failed to ensure ./data/ exists");
 
     info!("Connecting to the database...");
     let pool = database::connect().await?;
