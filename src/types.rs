@@ -77,14 +77,9 @@ impl Data {
             .wrap_err("failed to pick suggestion")
     }
 
-    /// Removes the suggestion with the given suggestion ID.
-    pub async fn remove_suggestion(&self, suggestion_id: u64) -> Result<()> {
-        database::remove_suggestion(&self.pool, suggestion_id).await
-    }
-
-    /// Removes the suggestion with the given poll ID.
-    pub async fn remove_suggestion_by_poll(&self, poll_id: u64) -> Result<()> {
-        database::remove_suggestion_by_poll(&self.pool, poll_id).await
+    /// Removes the suggestion with the given ID and the associated poll from the database (and not from the cache).
+    pub async fn remove_suggestion_and_poll(&self, suggestion_id: u64) -> Result<()> {
+        database::remove_suggestion_and_poll(&self.pool, suggestion_id).await
     }
 
     /// Inserts a new poll to the database and returns its ID.
@@ -95,19 +90,16 @@ impl Data {
         internal: bool,
     ) -> Result<u64> {
         let poll_id = database::insert_poll(&self.pool, message_id, author_id, internal).await?;
+
         let poll = Poll::new(poll_id, message_id, author_id, internal);
         self.polls.lock().await.push(poll);
+
         Ok(poll_id)
     }
 
     /// Updates the status of a poll by its ID.
     pub async fn update_poll_status(&self, poll_id: u64, status: &PollStatus) -> Result<()> {
         database::update_poll_status(&self.pool, poll_id, status).await
-    }
-
-    /// Removes the poll with the given poll ID.
-    pub async fn remove_poll(&self, poll_id: u64) -> Result<()> {
-        database::remove_poll(&self.pool, poll_id).await
     }
 
     pub async fn build_poll_embed(
@@ -234,7 +226,7 @@ impl Data {
             .await
             .wrap_err("failed to send message")?;
 
-        self.remove_suggestion(suggestion.id).await?;
+        self.remove_suggestion_and_poll(suggestion.id).await?;
 
         Ok(())
     }

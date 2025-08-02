@@ -146,7 +146,7 @@ async fn handle_poll_interaction(
     // `strip_prefix` is safe because we checked that `interaction.data.custom_id` starts with "poll:"
     let response = match interaction.data.custom_id.strip_prefix("poll:").unwrap() {
         "upvote" => {
-            if interaction.user.id != poll.author_id {
+            if interaction.user.id == poll.author_id {
                 match &mut poll.status {
                     PollStatus::Pending { votes } => {
                         let inserted = votes.insert(interaction.user.id);
@@ -209,23 +209,38 @@ async fn handle_poll_interaction(
             if interaction.user.id == poll.author_id {
                 match poll.status {
                     PollStatus::Pending { .. } | PollStatus::Completed => {
-                        // revoke the poll
+                        // remove the poll
                         poll.status = PollStatus::Revoked;
                         let poll = polls.remove(poll_index);
-                        data.remove_poll(poll.id).await?;
+                        data.update_poll_status(poll.id, &poll.status).await?;
 
                         // remove the suggestion
                         let suggestion = data.fetch_suggestion(poll.id).await?;
-                        data.remove_suggestion_by_poll(poll.id).await?;
+                        data.remove_suggestion_and_poll(suggestion.id).await?;
 
                         let embed = data.build_poll_embed(&ctx, &suggestion, &poll.status).await;
+
+                        let components = vec![CreateActionRow::Buttons(vec![
+                            CreateButton::new("poll:upvote")
+                                .label("Upvote")
+                                .emoji('👍')
+                                .disabled(true),
+                            CreateButton::new("poll:revoke")
+                                .label("Revoke")
+                                .emoji('🗑')
+                                .disabled(true),
+                            CreateButton::new("poll:veto")
+                                .label("Veto")
+                                .emoji('🛑')
+                                .disabled(true),
+                        ])];
 
                         // edit the message
                         data.get_poll_channel(poll.internal)
                             .edit_message(
                                 &ctx,
                                 poll.message_id,
-                                EditMessage::new().embed(embed).components(Vec::new()),
+                                EditMessage::new().embed(embed).components(components),
                             )
                             .await
                             .wrap_err("failed to edit message")?;
@@ -249,23 +264,38 @@ async fn handle_poll_interaction(
             {
                 match poll.status {
                     PollStatus::Pending { .. } | PollStatus::Completed => {
-                        // veto the poll
+                        // remove the poll
                         poll.status = PollStatus::Vetoed;
                         let poll = polls.remove(poll_index);
-                        data.remove_poll(poll.id).await?;
+                        data.update_poll_status(poll.id, &poll.status).await?;
 
                         // remove the suggestion
                         let suggestion = data.fetch_suggestion(poll.id).await?;
-                        data.remove_suggestion_by_poll(poll.id).await?;
+                        data.remove_suggestion_and_poll(suggestion.id).await?;
 
                         let embed = data.build_poll_embed(&ctx, &suggestion, &poll.status).await;
+
+                        let components = vec![CreateActionRow::Buttons(vec![
+                            CreateButton::new("poll:upvote")
+                                .label("Upvote")
+                                .emoji('👍')
+                                .disabled(true),
+                            CreateButton::new("poll:revoke")
+                                .label("Revoke")
+                                .emoji('🗑')
+                                .disabled(true),
+                            CreateButton::new("poll:veto")
+                                .label("Veto")
+                                .emoji('🛑')
+                                .disabled(true),
+                        ])];
 
                         // edit the message
                         data.get_poll_channel(poll.internal)
                             .edit_message(
                                 &ctx,
                                 poll.message_id,
-                                EditMessage::new().embed(embed).components(Vec::new()),
+                                EditMessage::new().embed(embed).components(components),
                             )
                             .await
                             .wrap_err("failed to edit message")?;

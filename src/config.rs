@@ -25,13 +25,13 @@ pub struct Config {
     #[serde(rename = "internal-channel-id")]
     pub internal_channel: ChannelId,
 
-    /// The external artist channel ID.
-    #[serde(rename = "external-channel-id")]
-    pub external_channel: ChannelId,
-
     /// The internal artist poll channel ID.
     #[serde(rename = "internal-poll-channel-id")]
     pub internal_poll_channel: ChannelId,
+
+    /// The external artist channel ID.
+    #[serde(rename = "external-channel-id")]
+    pub external_channel: ChannelId,
 
     /// The external artist poll channel ID.
     #[serde(rename = "external-poll-channel-id")]

@@ -38,7 +38,7 @@ pub async fn create_tables(pool: &SqlitePool) -> Result<()> {
     Ok(())
 }
 
-/// Adds a new suggestion to the database.
+/// Inserts a new suggestion into the database.
 pub async fn insert_suggestion(
     pool: &SqlitePool,
     suggestion: &Suggestion,
@@ -138,34 +138,46 @@ pub async fn pick_suggestion(pool: &SqlitePool, internal: bool) -> Result<Sugges
     })
 }
 
-/// Removes the suggestion with the given suggestion ID.
-pub async fn remove_suggestion(pool: &SqlitePool, suggestion_id: u64) -> Result<()> {
+/// Removes the suggestion with the given ID and the associated poll.
+pub async fn remove_suggestion_and_poll(pool: &SqlitePool, suggestion_id: u64) -> Result<()> {
     let suggestion_id = suggestion_id as i64;
 
-    query!(
+    let suggestion = query!(
         "DELETE FROM suggestions
-         WHERE id = ?",
+         WHERE id = ?
+         RETURNING *",
         suggestion_id
     )
-    .execute(pool)
+    .fetch_one(pool)
     .await
     .wrap_err("failed to remove suggestion")?;
 
-    Ok(())
-}
-
-/// Removes the suggestion with the given poll ID.
-pub async fn remove_suggestion_by_poll(pool: &SqlitePool, poll_id: u64) -> Result<()> {
-    let poll_id = poll_id as i64;
+    let poll = query!(
+        "DELETE FROM polls
+         WHERE id = ?
+         RETURNING *",
+        suggestion.poll_id
+    )
+    .fetch_one(pool)
+    .await
+    .wrap_err("failed to remove poll")?;
 
     query!(
-        "DELETE FROM suggestions
-         WHERE poll_id = ?",
-        poll_id
+        "INSERT INTO deleted_suggestions (user_id, username, artist_name, album_name, links, notes, internal, status, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        suggestion.user_id,
+        suggestion.username,
+        suggestion.artist_name,
+        suggestion.album_name,
+        suggestion.links,
+        suggestion.notes,
+        suggestion.internal,
+        poll.status,
+        suggestion.timestamp
     )
     .execute(pool)
     .await
-    .wrap_err("failed to remove suggestion")?;
+    .wrap_err("failed to insert deleted suggestion")?;
 
     Ok(())
 }
@@ -242,22 +254,6 @@ pub async fn update_poll_status(
     .execute(pool)
     .await
     .wrap_err("failed to update poll votes")?;
-
-    Ok(())
-}
-
-/// Removes the poll with the given poll ID.
-pub async fn remove_poll(pool: &SqlitePool, poll_id: u64) -> Result<()> {
-    let poll_id = poll_id as i64;
-
-    query!(
-        "DELETE FROM polls
-         WHERE id = ?",
-        poll_id
-    )
-    .execute(pool)
-    .await
-    .wrap_err("failed to remove poll")?;
 
     Ok(())
 }

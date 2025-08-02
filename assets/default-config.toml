@@ -4,11 +4,11 @@ guild-id = 0
 # The internal artist channel ID.
 internal-channel-id = 0
 
-# The external artist channel ID.
-external-channel-id = 0
-
 # The internal artist poll channel ID.
 internal-poll-channel-id = 0
+
+# The external artist channel ID.
+external-channel-id = 0
 
 # The external artist poll channel ID.
 external-poll-channel-id = 0

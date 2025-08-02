@@ -20,3 +20,16 @@ CREATE TABLE IF NOT EXISTS polls (
     status INTEGER NOT NULL DEFAULT 0,
     votes TEXT
 );
+
+CREATE TABLE IF NOT EXISTS deleted_suggestions (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    username TEXT NOT NULL,
+    artist_name TEXT NOT NULL,
+    album_name TEXT NOT NULL,
+    links TEXT NOT NULL,
+    notes TEXT,
+    internal BOOLEAN NOT NULL,
+    status INTEGER NOT NULL,
+    timestamp DATETIME NOT NULL
+);
