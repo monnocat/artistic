@@ -1,5 +1,3 @@
 /target
+/data
 .env
-config.toml
-database.sqlite
-biweekly_flag.bin
