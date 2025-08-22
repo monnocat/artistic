@@ -116,7 +116,6 @@ pub async fn pick_suggestion(pool: &SqlitePool, internal: bool) -> Result<Sugges
         "SELECT id, user_id, username, artist_name, album_name, links, notes, internal
          FROM suggestions
          WHERE internal = ? AND approved = TRUE
-         GROUP BY user_id
          ORDER BY timestamp
          LIMIT 1",
         internal

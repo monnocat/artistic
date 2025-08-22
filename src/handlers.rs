@@ -135,18 +135,29 @@ async fn handle_poll_interaction(
     let mut polls = data.polls.lock().await;
 
     // get the poll if it exists
-    let (poll_index, poll) = polls
+    let Some((poll_index, poll)) = polls
         .iter_mut()
         .enumerate()
         .find(|(_, poll)| poll.message_id == interaction.message.id)
-        .ok_or(eyre!("couldn't find poll"))?;
+    else {
+        interaction
+            .create_response(
+                &ctx,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new().content("This poll no longer exists."),
+                ),
+            )
+            .await
+            .wrap_err("failed to send response")?;
+        return Ok(());
+    };
 
     let builder = CreateInteractionResponseMessage::new().ephemeral(true);
 
     // `strip_prefix` is safe because we checked that `interaction.data.custom_id` starts with "poll:"
     let response = match interaction.data.custom_id.strip_prefix("poll:").unwrap() {
         "upvote" => {
-            if interaction.user.id == poll.author_id {
+            if interaction.user.id != poll.author_id {
                 match &mut poll.status {
                     PollStatus::Pending { votes } => {
                         let inserted = votes.insert(interaction.user.id);
