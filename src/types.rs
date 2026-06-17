@@ -8,11 +8,7 @@ use poise::serenity_prelude::*;
 use sqlx::sqlite::SqlitePool;
 use tokio::sync::Mutex;
 
-use crate::{
-    config::Config,
-    database,
-    util::{artist_capital, get_icon_url},
-};
+use crate::{config::Config, database, util::artist_capital};
 
 #[derive(Clone)]
 pub struct Data {
@@ -104,7 +100,7 @@ impl Data {
 
     pub async fn build_poll_embed(
         &self,
-        cache_http: impl CacheHttp,
+        _: impl CacheHttp,
         suggestion: &Suggestion,
         status: &PollStatus,
     ) -> CreateEmbed {
@@ -201,7 +197,10 @@ impl Data {
             .send_message(
                 cache_http,
                 CreateMessage::new()
-                    .content(format!("<@&{}> (suggested by <@{}>)", self.config.announcement_role, suggestion.user_id))
+                    .content(format!(
+                        "<@&{}> (suggested by <@{}>)",
+                        self.config.announcement_role, suggestion.user_id
+                    ))
                     .embed(embed),
             )
             .await

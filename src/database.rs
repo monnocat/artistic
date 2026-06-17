@@ -152,7 +152,21 @@ pub async fn remove_suggestion_and_poll(pool: &SqlitePool, suggestion_id: u64) -
     .await
     .wrap_err("failed to remove suggestion")?;
 
-    let id = query!(
+    let poll_status = query!(
+        "DELETE FROM polls
+         WHERE id = ?
+         RETURNING status",
+        suggestion.poll_id
+    )
+    .fetch_one(pool)
+    .await.map_or_else(|_| {
+                warn!(
+            "Failed to remove poll for suggestion #{suggestion_id}. This is fine if the suggestion did not have a poll."
+        );
+        -1
+    }, |r| r.status);
+
+    query!(
         "INSERT INTO deleted_suggestions (user_id, username, artist_name, album_name, links, notes, internal, status, timestamp)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         suggestion.user_id,
@@ -162,38 +176,12 @@ pub async fn remove_suggestion_and_poll(pool: &SqlitePool, suggestion_id: u64) -
         suggestion.links,
         suggestion.notes,
         suggestion.internal,
-        -1,
+        poll_status,
         suggestion.timestamp
     )
     .execute(pool)
     .await
     .wrap_err("failed to insert deleted suggestion")?.last_insert_rowid();
-
-    let Ok(poll) = query!(
-        "DELETE FROM polls
-         WHERE id = ?
-         RETURNING *",
-        suggestion.poll_id
-    )
-    .fetch_one(pool)
-    .await
-    else {
-        warn!(
-            "Failed to remove poll for suggestion #{suggestion_id}. This is fine if the suggestion did not have a poll."
-        );
-        return Ok(());
-    };
-
-    query!(
-        "UPDATE deleted_suggestions
-         SET status = ?
-         WHERE id = ?",
-        poll.status,
-        id
-    )
-    .execute(pool)
-    .await
-    .wrap_err("failed to update deleted suggestion poll status")?;
 
     Ok(())
 }
