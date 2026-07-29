@@ -71,7 +71,7 @@ pub async fn post_announcements(ctx: Context, data: Data) {
         }
     };
 
-    let mut biweekly_flag = biweekly_flag[0] % 2 == 0;
+    let mut biweekly_flag = biweekly_flag[0] % 2 != 0;
 
     loop {
         // reusing `now` because this could be called near the announcement time
@@ -176,7 +176,9 @@ async fn handle_poll_interaction(
             .create_response(
                 &ctx,
                 CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new().ephemeral(true).content("This poll no longer exists."),
+                    CreateInteractionResponseMessage::new()
+                        .ephemeral(true)
+                        .content("This poll no longer exists."),
                 ),
             )
             .await
