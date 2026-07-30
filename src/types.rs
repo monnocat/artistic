@@ -114,8 +114,13 @@ impl Data {
         let mut embed_fields = vec![
             ("Artist Name", suggestion.artist_name.clone(), true),
             ("Album Name", suggestion.album_name.clone(), true),
-            ("Album Link(s)", suggestion.links.clone(), false),
         ];
+
+        if suggestion.links.lines().count() == 1 {
+            embed_fields.push(("Album Link", suggestion.links.clone(), true));
+        } else {
+            embed_fields.push(("Album Links", suggestion.links.clone(), false));
+        }
 
         if let Some(notes) = &suggestion.notes {
             embed_fields.push(("Other Comments", notes.clone(), false));
@@ -181,8 +186,13 @@ impl Data {
         let mut embed_fields = vec![
             ("Artist Name", suggestion.artist_name.clone(), true),
             ("Album Name", suggestion.album_name.clone(), true),
-            ("Album Link(s)", suggestion.links.clone(), false),
         ];
+
+        if suggestion.links.lines().count() == 1 {
+            embed_fields.push(("Album Link", suggestion.links.clone(), true));
+        } else {
+            embed_fields.push(("Album Links", suggestion.links.clone(), false));
+        }
 
         if let Some(notes) = &suggestion.notes {
             embed_fields.push(("Other Comments", notes.clone(), false));
